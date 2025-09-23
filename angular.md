@@ -178,3 +178,63 @@ W ten sposob pobieramy wartosc wyemitowana z Output przez ten $event
 Mozemy tez dodawac nasz output przez sygnaly z wykorzystaniem wlasnie funkcji ``select = output()``
 Pozostala czesc zostaje taka sama, tutaj ta funkcja nie tworzy sygnalu tylko OutputEmitterRef. Dodali to po to zeby bylo krocej i zeby bylo spojnie z inputami pod wzgledem skladni.
 
+Mozemy rowniez skorzytac ze ? w skladni zeby poinformowac typescript ze jestesmy swiadomi ze wartosc w tym polu moze nie byc ustawiona i to jest dla nas ok.
+``@Input name? : string;``
+``@Input name : string | undefined;`` - to tworzy union type ktory mowi ze ta wartosc bedzie stringiem albo undefined
+``<app-tasks [name]="selectedUser?.name" />``
+Jesli selectedUser bedzie undefined to poda po pobraniu name tez undefined
+```typescript
+  @Input({required: true})
+  user!: {id: string, avatar: string, name: string};
+```
+W taki sposob mozemy tworzyc typ przy okazji definicji properties.
+
+Mozemy tez nasz type zdefiniowac nad Componentem i pozniej tylko z niego skorzystac:
+``type User = {id: string, name: string, avatar: string}``
+
+lub przez stworzenie interface'u.
+```typescript
+interface User {
+  id: string;
+  name: string;
+  avatar: string;
+}
+```
+Interface pozwala nam definiowac tylko obiekty a type nie tylko.
+!!https://stackoverflow.com/questions/37233735/interfaces-vs-types-in-typescript/52682220#52682220
+
+W htmlu mozemy korzystac z petli for np:
+```html
+@for (user of users; track user.id) {
+    <li>
+        <app-user [user]="user" (select)="onSelectUser($event)" />
+    </li>
+}
+```
+To jest nowa skladnia a stara wyglada tak:
+```html
+<li *ngFor="let user of users">
+    <app-user [user]="user" (select)="onSelectUser($event)" />
+</li>
+```
+To wymaga zdefiniowania importu w Componencie.
+Ten track pozwala angularowi lepiej renderowac liste i nia zarzadzac np jakby jakies dane byly usuwane z niej itp.
+
+Jesli nie chcemy wyswietlac jakiegos elementu mozemy wykorzystac if'a:
+```html
+@if (selectedUser) {
+    <app-tasks [selectedUser]="selectedUser"></app-tasks>
+} @else{
+    <p id="fallback">Select a user to see their tasks!</p>
+}
+```
+
+Tak wyglada stara skladnia:
+```html
+<app-tasks *ngIf="selectedUser; else fallback" [selectedUser]="selectedUser"></app-tasks>
+<ng-template #fallback>
+    <p id="fallback">Select a user to see their tasks!</p>
+</ng-template>
+```
+
+
