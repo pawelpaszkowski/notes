@@ -238,3 +238,136 @@ Tak wyglada stara skladnia:
 ```
 
 
+Interfejsy powinny byc tworzone w oddzielnych plikach. Mozna je np trzymac w folderze w ktorym ten model wystepuje.
+np dla user nazwalibysmy ten plik ``user.model.ts`` i umiescili go w folderze user/users
+Musimy jeszcze dodac slowo export na poczatku.
+```ts
+export interface User {
+  id: string;
+  name: string;
+  avatar: string;
+}
+```
+
+Pozniej musimy zaimportowac ten model:
+```ts
+import { User } from './user.model';
+```
+
+Mozemy klasy zbindowac tylko w okreslonych przypadkach:
+```html
+<button (click)="onSelectUser()" [class.active]="selected">
+```
+Wtedy selected to nasz boolean zdefiniowany w Componencie i klasa (styl) active bedzie sie tylko wyswietlac gdy mamy true.
+
+> Jesli dana wartosc jest wykorzystywana tylko w tym componencie to nie potrzebujemy ani @Input ani @Output
+
+Two way binding:
+Pozwala nam wiazac dane przez dyrektywe ngModel. Dyrektywy nie maja templateow w porownaniu do Componentow i wplywaja na elementy html'a.
+Componenty to dyrektywy z template'ami. Nie wszystkie elementy wspieraja Two way binding [()]. Dzieki two way binding mozemy jednoczenie miec input i output na tym polu. Pozniej trzeba to ngModel wpisac w imports w Componencie np przez podanie FormsModule.
+FormsModule to kolekcje dyrektyw i funkcjonalnosci dotyczacych formularzy.
+
+Template:
+```html
+      <input type="text" id="title" name="title" [(ngModel)]="enteredTitle" />
+```
+Component:
+```ts
+enteredTitle = '';
+```
+
+> typ date w html zawsze zwraca stringa
+## Mozemy to rowniez zrobic na sygnalach:
+Wystarczy ze w Componencie zrobimy:
+```ts
+enteredTitle = signal('');
+```
+I to wszystko.
+## Jak zrobic submit na tym Html'u
+Pozniej domyslnie gdy w htmlu mamy submit button to on probuje wyslac ten formularz na serwer aplikacji ktory wystawil strone. Chcemy takie rozwiazanie nadpisac i obsluzyc ten formularz samodzielnie. Chcemy to przejac zeby w js samemu to obsluzyc po stronie clienta.
+Jesli juz zaimortowalismy FormsModule to takie rozwiazanie powinno juz samo dzialac i blokowac domyslne. Musimy jedynie skorzystac z :
+```html
+  <form (ngSubmit)="onSubmit()">
+```
+
+Jesli chcemy mozemy style tworzyc w nowym componenice np shared/card i wtedy korzystac z niego w wielu miejscach.
+Mozemy stworzyc komponent z np samym <div> w srodku i korzystac z niego jako wraper i on tylko posiada ten css co jest nam potrzebny.
+Jednak domyslnie jak tak zrobimy to dane wewnatrz naszego tagu z componentem zostana usuniete. Zeby zaakceptowac ten content co jest w srodku 
+musimy skorzystac z ng-content.
+W naszym nowym wrapperze:
+```html
+<div>
+    <ng-content></ng-content>
+</div>
+```
+A pozniej:
+```html
+<app-card>
+    <button (click)="onSelectUser()" [class.active]="selected">
+        <img [src] = "imagePath" [alt] = "user.name"/>
+        <span>{{ user.name }}</span>
+    </button>
+</app-card>
+```
+Ten mechanizm nazywa sie : content projection.
+
+## Pipes:
+Pipe transformuje dane w template'ach, mozemy skorzystac z juz stworzonych w angularze np. DatePipe lub samemu stworzyc wlasna wersje:
+```html
+    <time>{{ task.dueDate | date }}</time>
+    ```
+to formatuje dane do bardziej czytelnej wersji dla ludzi.
+Mozemy konfigurowac to przez np dodanie na koncu ``date:'short'`` wtedy dostaniemy inny format danych.
+
+
+## Good practices:
+W angularze dobrym pomyslem jest trzymanie naszych klas w componentach zawierajacych jak najmniej logiki jak to mozliwe.
+
+Wtedy najlepiej uzywac serwisow zeby zarzadzac danymi.
+Serwisy powinny byc w tym samym folderze co componenty, zwyczajnie dodajemy nowy plik w stylu ``tasks.service.ts``.
+Service to zwyczajnie nowa klasa. Celem takiego serwisu jest wykonywanie operacji i zarzadzanie danymi ktore sa potrzebne w jednym lub kilku comonentach.
+```ts
+export class TasksService
+```
+Musimy podac export zeby moc korzystac z tej klasy w innych klasach.
+Pozniej mozemy dodac ta klase do naszego Componentu np przez:
+```
+private tasksService = new TasksService();
+```
+Jednak to powoduje ze do kazdego komponentu bedzie tworzona nowa instancja tej klasy i dane nie beda wspoldzielone.
+Ale mozemy skorzytac z dependency injection ktore jest zapewniane przez Angulara.
+Dzieki temu sami nie tworzymy instancji klas, tylko mowimy Angularowi ze potrzebujemy i on je tworzy.
+Mozemy z tego mechanizmu skorzystac przez konstruktor:
+```ts
+    private tasksService: TasksService;
+  constructor(tasksService: TasksService) {
+    this.tasksService = tasksService;
+  }
+```
+Albo mozemy to tez zrobic szybciej przez podanie private w konstruktorze i bedzie dzialac.
+```ts
+  constructor(private tasksService: TasksService) {}
+```
+Na koniec musimy nasz serwis zarejstrowac jako ``@Injectable`` zeby Angular wiedzial ze moze go wstrzyknac do klasy.
+```ts
+@Injectable({ providedIn: 'root' })
+export class TasksService 
+```
+Mozemy rowniez klase wstrzyknac przez:
+```ts
+  private tasksService = inject(TasksService);
+```
+## Local storage
+W local storage zawsze trzymamy wartosci jako string wiec jesli chcemy pobrac te dane to najpierw trzeba je sparsowac.
+```ts
+        const storedTasks = localStorage.getItem('tasks');
+
+        if(storedTasks) {
+            this.dummyTasks = JSON.parse(storedTasks);
+        }
+...
+        localStorage.setItem('tasks', JSON.stringify(this.dummyTasks));
+```
+
+
+
